@@ -2,19 +2,48 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: RDS MySQL Instance for Laravel Application
 
 Resources:
+  # RDS Instance
   LaravelRDS:
     Type: AWS::RDS::DBInstance
     Properties:
       DBInstanceClass: db.t3.micro
-      AllocatedStorage: 5
+      AllocatedStorage: 9 # Increased storage to 20 GB (adjust as needed)
       Engine: MySQL
       EngineVersion: 8.0
-      MasterUsername: admin
-      MasterUserPassword: Gajen@97
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword  # Using SecretManager for password
       DBName: laravel_db
       PubliclyAccessible: false
+      MultiAZ: false  # Adjust to true for high availability if required
+      VPCSecurityGroups:
+        - sg-09c489f9b1744dc49  # Update with your VPC security group ID
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+
+  # Secrets Manager for the RDS password
+  DBPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: LaravelRDSPassword
+      SecretString: Gajen@97 # Store the password securely
+
+  # Secrets Manager for the RDS username
+  DBUsername:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: LaravelDBUsername
+      SecretString: admin  # Store the username securely
+
+  # DB Subnet Group (Ensure the RDS instance is in the correct VPC)
+  RDSDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for the Laravel RDS instance"
+      SubnetIds:
+        - subnet-0fdc7d89e2b460ee1
+        - subnet-0b0a0583d221d317b  # Replace with your subnet ID
 
 Outputs:
+  # Output the RDS instance endpoint
   RDSInstanceEndpoint:
     Value: !GetAtt LaravelRDS.Endpoint.Address
-    Description: The RDS Endpoint
+    Description: "The RDS endpoint of the Laravel MySQL instance"
