@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ECR Repository for Laravel Application
+
+Resources:
+  LaravelECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: laravel-app
+
+Outputs:
+  ECRRepositoryURI:
+    Value: !Ref LaravelECR
+    Description: URI of the ECR Repository
