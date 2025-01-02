@@ -30,19 +30,16 @@ jobs:
           --template-file infra/eks.yaml \
           --stack-name LaravelEKS \
           --capabilities CAPABILITY_NAMED_IAM
-
     - name: Deploy DynamoDB Stack
       run: |
         aws cloudformation deploy \
           --template-file infra/dynamodb.yaml \
           --stack-name LaravelDynamoDB
-
     - name: Deploy ECR Stack
       run: |
         aws cloudformation deploy \
           --template-file infra/ecr.yaml \
           --stack-name LaravelECR
-
   build-and-deploy:
     name: Build and Deploy to EKS
     runs-on: ubuntu-latest
@@ -69,28 +66,22 @@ jobs:
       run: |
         # Define the ECR repository URI
         IMAGE_URI=650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
-
         # Build the Docker image
         docker build -f docker/Dockerfile -t $IMAGE_URI .
-
         # Push the Docker image to ECR
         docker push $IMAGE_URI
-
     # Step 5: Update Kubernetes Config for EKS
     - name: Update kubeconfig for EKS
       run: |
         aws eks update-kubeconfig --region ap-south-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
-
     # Step 6: Deploy to EKS
     - name: Deploy to EKS
       run: |
         # Replace placeholder in Kubernetes deployment manifest with ECR image URI
         sed -i.bak "s|DOCKER_IMAGE|650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest|g" k8s/deployment.yaml
-
         # Apply the updated manifests to EKS
         kubectl apply -f docker/deployment.yaml \
         kubectl apply -f docker/service.yaml
-
     # Step 7: Output EKS Service URL
     - name: Output EKS Service URL
       run: |
