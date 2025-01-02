@@ -100,7 +100,7 @@ jobs:
     - name: Wait for LoadBalancer to be Provisioned
       run: |
         echo "Waiting for LoadBalancer to be ready..."
-        sleep 5 # Adjust if needed, depending on your LoadBalancer provisioning time
+        sleep  0.5 # Adjust if needed, depending on your LoadBalancer provisioning time
         
     #output URL
     - name: Get EKS Service URL
