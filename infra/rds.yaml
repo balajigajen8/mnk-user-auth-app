@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: RDS MySQL Instance for Laravel Application
+
+Resources:
+  LaravelRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 5
+      Engine: MySQL
+      EngineVersion: 8.0
+      MasterUsername: admin
+      MasterUserPassword: Gajen@97
+      DBName: laravel_db
+      PubliclyAccessible: false
+
+Outputs:
+  RDSInstanceEndpoint:
+    Value: !GetAtt LaravelRDS.Endpoint.Address
+    Description: The RDS Endpoint
