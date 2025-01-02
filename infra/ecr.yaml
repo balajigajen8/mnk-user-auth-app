@@ -5,7 +5,7 @@ Resources:
   LaravelECR:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: laravel-app
+      RepositoryName: mnk-user-auth-app
 
 Outputs:
   ECRRepositoryURI:
