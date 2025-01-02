@@ -95,9 +95,19 @@ jobs:
         echo "Applying Kubernetes deployment and service manifests"
         kubectl apply -f docker/deployment.yaml
         kubectl apply -f docker/service.yaml
-
-    # Step 8: Output EKS Service URL
-    - name: Output EKS Service URL
+        
+    # Step 8: Deploy to LB
+    - name: Wait for LoadBalancer to be Provisioned
       run: |
-        SERVICE_URL=$(kubectl get svc -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+        echo "Waiting for LoadBalancer to be ready..."
+        sleep 60 # Adjust if needed, depending on your LoadBalancer provisioning time
+        
+    #output URL
+    - name: Get EKS Service URL
+      run: |
+        SERVICE_URL=$(kubectl get svc laravel-service -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+        if [ -z "$SERVICE_URL" ]; then
+          echo "LoadBalancer is not ready. Please check the service."
+          exit 1
+        fi
         echo "EKS Service URL: http://$SERVICE_URL"
