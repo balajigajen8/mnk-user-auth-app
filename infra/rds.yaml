@@ -24,7 +24,7 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: LaravelRDSPassword
-      SecretString: Gajen@97 # Store the password securely
+      SecretString: Gajen@89&97 # Store the password securely
 
   # Secrets Manager for the RDS username
   DBUsername:
