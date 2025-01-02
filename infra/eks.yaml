@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EKS Cluster for Laravel Application
+
+Resources:
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: LaravelEKSCluster
+      ResourcesVpcConfig:
+        SubnetIds:
+          - subnet-0fdc7d89e2b460ee1
+          - subnet-0b0a0583d221d317b
+        SecurityGroupIds:
+          - sg-044b4b6bf5141af7f
+      RoleArn: arn:aws:iam::650251721226:role/EKSRole
+
+Outputs:
+  ClusterName:
+    Value: !Ref EKSCluster
+    Description: Name of the EKS Cluster
