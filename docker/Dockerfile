@@ -1,55 +1,37 @@
-# Use the official PHP image as the base
-FROM php:8.0-fpm as builder
+# Use the official PHP image with PHP 8.1 (or another version as needed)
+FROM php:8.1-cli
 
-# Install system dependencies and PHP extensions
+# Install dependencies required for your project
 RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
     git \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd
+    unzip \
+    curl \
+    libzip-dev \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
+# Install PHP extensions
+RUN docker-php-ext-configure zip --with-libzip \
+    && docker-php-ext-install zip \
+    && docker-php-ext-install mysqli pdo pdo_mysql \
+    && docker-php-ext-enable mysqli pdo pdo_mysql
+
+# Install Composer globally
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Set working directory
-WORKDIR /var/www
+# Set the working directory in the container
+WORKDIR /var/www/html
 
-# Copy composer.json and composer.lock to utilize Docker layer caching
-COPY composer.json composer.lock /var/www/
+# Copy your application files into the container
+COPY . /var/www/html
 
-# Install PHP dependencies via Composer (use flags to optimize)
+# Install the PHP dependencies via Composer
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Copy the rest of the application files into the container
-COPY . /var/www
+# Expose port (if you're running a web server or any other service inside the container)
+EXPOSE 80
 
-# Set appropriate file permissions for Laravel (necessary for storage and cache)
-RUN chown -R www-data:www-data /var/www
-
-# Final stage: Create a smaller image for serving the application
-FROM php:8.0-fpm
-
-# Install necessary dependencies for runtime
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
-    git \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd
-
-# Copy the application files and installed dependencies from the builder stage
-COPY --from=builder /var/www /var/www
-
-# Set working directory
-WORKDIR /var/www
-
-# Expose the port for PHP-FPM
-EXPOSE 9000
-
-# Start PHP-FPM server
-CMD ["php-fpm"]
+# Command to run the application (if it's a web server, like Apache or Nginx, you'd replace this with the appropriate start command)
+CMD ["php", "-S", "0.0.0.0:80", "-t", "/var/www/html/public"]
