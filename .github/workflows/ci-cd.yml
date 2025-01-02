@@ -63,9 +63,7 @@ jobs:
     - name: Log in to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
       with:
-        mask-password: false
-        registry-type: private
-        skip-logout: false
+        region: ap-south-1 
 
     # Step 4: Push Docker Image to ECR
     - name: Push Docker Image to ECR
