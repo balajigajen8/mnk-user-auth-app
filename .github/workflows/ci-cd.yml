@@ -58,10 +58,12 @@ jobs:
       run: |
         docker build -f docker/Dockerfile -t laravel-app .
         docker tag laravel-app:latest 650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
-        
+
     # Step 3: Log in to Amazon ECR (automated using aws-actions/amazon-ecr-login)
     - name: Log in to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
+      with:
+        region: ap-south-1  # Specify the AWS region
 
     # Step 4: Push Docker Image to ECR
     - name: Push Docker Image to ECR
