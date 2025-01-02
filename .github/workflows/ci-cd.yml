@@ -36,7 +36,8 @@ jobs:
         aws cloudformation deploy \
           --template-file infra/rds.yaml \
           --stack-name LaravelRDS \
-          --capabilities CAPABILITY_NAMED_IAM
+          --capabilities CAPABILITY_NAMED_IAM \
+          --region ap-south-1
 
     - name: Deploy DynamoDB Stack
       run: |
