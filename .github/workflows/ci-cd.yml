@@ -88,8 +88,8 @@ jobs:
         sed -i.bak "s|DOCKER_IMAGE|650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest|g" k8s/deployment.yaml
 
         # Apply the updated manifests to EKS
-        kubectl apply -f deployment.yaml
-        kubectl apply -f service.yaml
+        kubectl apply -f docker/deployment.yaml \
+        kubectl apply -f docker/service.yaml
 
     # Step 7: Output EKS Service URL
     - name: Output EKS Service URL
