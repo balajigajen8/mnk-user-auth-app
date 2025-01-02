@@ -43,9 +43,8 @@ jobs:
           --template-file infra/ecr.yaml \
           --stack-name LaravelECR
 
-  build-and-deploy-application:
-    name: Build and Deploy Application
-    needs: provision-infrastructure
+  build-and-deploy:
+    name: Build and Deploy to EKS
     runs-on: ubuntu-latest
 
     steps:
@@ -53,38 +52,46 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    # Step 2: Build Docker Image
-    - name: Build Docker Image
-      run: |
-        docker build -f docker/Dockerfile -t laravel-app .
-        docker tag laravel-app:latest 650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
+    # Step 2: Configure AWS Credentials
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
 
-    # Step 3: Log in to Amazon ECR (No need for the region here)
+    # Step 3: Log in to Amazon ECR
     - name: Log in to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
-      with:
-        region: ap-south-1 
 
-    # Step 4: Push Docker Image to ECR
-    - name: Push Docker Image to ECR
+    # Step 4: Build and Push Docker Image
+    - name: Build and Push Docker Image
       run: |
-        docker push 650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
+        # Define the ECR repository URI
+        IMAGE_URI=650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
 
-    # Step 5: Update kube config for EKS
-    - name: Update kube config
-      run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ap-south-1
+        # Build the Docker image
+        docker build -f docker/Dockerfile -t $IMAGE_URI .
 
-    # Step 6: Deploy Docker Image to EKS
+        # Push the Docker image to ECR
+        docker push $IMAGE_URI
+
+    # Step 5: Update Kubernetes Config for EKS
+    - name: Update kubeconfig for EKS
+      run: |
+        aws eks update-kubeconfig --region ap-south-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
+
+    # Step 6: Deploy to EKS
     - name: Deploy to EKS
       run: |
-        # Replace the image in your Kubernetes manifests (deployment.yaml)
-        sed -i.bak "s|DOCKER_IMAGE|650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest|g" manifests/deployment.yaml
+        # Replace placeholder in Kubernetes deployment manifest with ECR image URI
+        sed -i.bak "s|DOCKER_IMAGE|650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest|g" k8s/deployment.yaml
 
-        # Apply the Kubernetes manifests to EKS
-        kubectl apply -f manifests/deployment.yaml
-        kubectl apply -f manifests/service.yaml
+        # Apply the updated manifests to EKS
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
 
-    # Optional: Output the EKS service URL
+    # Step 7: Output EKS Service URL
     - name: Output EKS Service URL
       run: |
-        echo "EKS service URL: http://$(kubectl get svc -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}' -n default)"
+        echo "EKS service URL: http://$(kubectl get svc -o=jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')"
