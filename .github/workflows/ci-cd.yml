@@ -43,7 +43,7 @@ jobs:
 
 #Depolyment page 
   build-and-deploy:
-    name: Build and Deploy to EKS
+    name: Build and Deploy DB,ECR to EKS
     runs-on: ubuntu-latest
 
     steps:
