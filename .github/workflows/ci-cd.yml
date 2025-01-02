@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Laravel with CloudFormation
+name: CI/CD Pipeline for Laravel with ECR and EKS
 
 on:
   push:
@@ -21,9 +21,9 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1
+        aws-region: ap-south-1  # Region is specified here
 
-    # Step 3: Deploy CloudFormation Stacks
+    # Step 3: Deploy CloudFormation Stacks (optional steps)
     - name: Deploy EKS Stack
       run: |
         aws cloudformation deploy \
@@ -59,11 +59,13 @@ jobs:
         docker build -f docker/Dockerfile -t laravel-app .
         docker tag laravel-app:latest 650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
 
-    # Step 3: Log in to Amazon ECR (automated using aws-actions/amazon-ecr-login)
+    # Step 3: Log in to Amazon ECR (No need for the region here)
     - name: Log in to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
       with:
-        region: ap-south-1  # Specify the AWS region
+        mask-password: false
+        registry-type: private
+        skip-logout: false
 
     # Step 4: Push Docker Image to ECR
     - name: Push Docker Image to ECR
