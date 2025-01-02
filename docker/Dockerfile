@@ -1,5 +1,5 @@
-# Use the official PHP image as the base
-FROM php:8.0-fpm as builder
+# Use the official PHP image with PHP 8.2 as the base
+FROM php:8.2-fpm as builder
 
 # Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -20,8 +20,8 @@ WORKDIR /var/www
 # Copy composer.json and composer.lock to utilize Docker layer caching
 COPY composer.json composer.lock /var/www/
 
-# Install PHP dependencies via Composer (use flags to optimize)
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# Clear Composer cache to ensure no old dependencies are used and install PHP dependencies
+RUN composer clear-cache && composer install --no-interaction --prefer-dist --optimize-autoloader
 
 # Copy the rest of the application files into the container
 COPY . /var/www
@@ -30,7 +30,7 @@ COPY . /var/www
 RUN chown -R www-data:www-data /var/www
 
 # Final stage: Create a smaller image for serving the application
-FROM php:8.0-fpm
+FROM php:8.2-fpm
 
 # Install necessary dependencies for runtime
 RUN apt-get update && apt-get install -y \
