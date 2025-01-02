@@ -106,8 +106,7 @@ jobs:
     - name: Get EKS Service URL
       run: |
         SERVICE_URL=$(kubectl get svc laravel-service -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-        if [ -z "$SERVICE_URL" ]; then
-          echo "LoadBalancer is not ready. Please check the service."
+        if [ -z "$SERVICE_URL" ];
           exit 1
         fi
         echo "EKS Service URL: http://$SERVICE_URL"
