@@ -58,33 +58,32 @@ jobs:
       run: |
         docker build -f docker/Dockerfile -t laravel-app .
         docker tag laravel-app:latest 650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
-        
+
+    # Step 3: Log in to Amazon ECR
     - name: Log in to Amazon ECR
       run: |
         aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 650251721226.dkr.ecr.ap-south-1.amazonaws.com
 
-    # Step 5: Push Docker Image to ECR
+    # Step 4: Push Docker Image to ECR
     - name: Push Docker Image to ECR
       run: |
         docker push 650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest
 
-    # Step 6: Deploy Docker Image to ECS
+    # Step 5: Deploy Docker Image to ECS
     - name: Deploy to ECS
       run: |
         # Update ECS task definition with the new Docker image
         aws ecs register-task-definition \
           --family laravel-app-task \
-          --container-definitions "[
-            {
-              \"name\": \"laravel-app\",
-              \"image\": \"650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest\",
-              \"memory\": 512,
-              \"cpu\": 256,
-              \"essential\": true,
-              \"portMappings\": [{\"containerPort\": 80, \"hostPort\": 80}]
-            }
-          ]"
-        
+          --container-definitions "[{
+            \"name\": \"laravel-app\",
+            \"image\": \"650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:latest\",
+            \"memory\": 512,
+            \"cpu\": 256,
+            \"essential\": true,
+            \"portMappings\": [{\"containerPort\": 80, \"hostPort\": 80}]
+          }]"
+
         # Update ECS service to use the new task definition
         aws ecs update-service \
           --cluster laravel-cluster \
@@ -96,7 +95,7 @@ jobs:
       run: |
         echo "ECS service URL: http://$(aws ecs describe-services --cluster laravel-cluster --services laravel-app-service --query 'services[0].loadBalancers[0].dnsName' --output text)"
 
-    # Step 4: Deploy to EKS
+    # Step 6: Deploy to EKS (if applicable)
     - name: Deploy to EKS
       run: |
         kubectl apply -f docker/deployment.yaml
