@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Laravel with ECR and EKS
+name: CI/CD Pipeline for Laravel with ECR and EKS 
 
 on:
   push:
