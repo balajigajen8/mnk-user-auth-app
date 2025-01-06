@@ -1,4 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EKS Cluster Setup for Laravel Application'
+
+Parameters:
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Subnet IDs for EKS Cluster
 
 Resources:
   # EKS Cluster Role
@@ -6,7 +12,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -15,14 +21,13 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
-        - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
 
   # EKS Node Role
   EKSNodeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -40,46 +45,26 @@ Resources:
       Name: LaravelEKSCluster
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
-        SubnetIds:
-          - subnet-0ad7134cb6ddc4635
-          - subnet-06e4e7b357640bb4f
+        SubnetIds: !Ref SubnetIds
         SecurityGroupIds:
-          - sg-044b4b6bf5141af7f
-      Version: '1.21'
+          - sg-044b4b6bf5141af7f  # Update with your security group ID
+      Version: '1.22'  # Updated Kubernetes version
 
-  # EKS Node Group
-  EKSNodeGroup:
-    Type: AWS::EKS::Nodegroup
+  # VPC for EKS (You can use an existing VPC)
+  VPC:
+    Type: AWS::EC2::VPC
     Properties:
-      ClusterName: !Ref EKSCluster
-      NodegroupName: LaravelEKSNodeGroup
-      NodeRole: !GetAtt EKSNodeRole.Arn
-      Subnets:
-        - subnet-0ad7134cb6ddc4635
-        - subnet-06e4e7b357640bb4f
-      ScalingConfig:
-        MinSize: 1
-        MaxSize: 2
-        DesiredSize: 1
-      InstanceTypes:
-        - t3.medium
-      AmiType: AL2_x86_64
-      RemoteAccess:
-        Ec2SshKey: testing
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
 
 Outputs:
-  EKSClusterName:
-    Description: "EKS Cluster Name"
+  ClusterName:
+    Description: 'EKS Cluster Name'
     Value: !Ref EKSCluster
-
-  EKSClusterRoleArn:
-    Description: "EKS Cluster Role ARN"
+  ClusterEndpoint:
+    Description: 'EKS Cluster API Server Endpoint'
+    Value: !GetAtt EKSCluster.Endpoint
+  ClusterRoleArn:
+    Description: 'EKS Cluster Role ARN'
     Value: !GetAtt EKSClusterRole.Arn
-
-  EKSNodeRoleArn:
-    Description: "EKS Node Role ARN"
-    Value: !GetAtt EKSNodeRole.Arn
-
-  EKSNodeGroupName:
-    Description: "EKS Node Group Name"
-    Value: !Ref EKSNodeGroup
