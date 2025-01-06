@@ -9,11 +9,11 @@ Resources:
       Name: LaravelEKSCluster
       ResourcesVpcConfig:
         SubnetIds:
-          - subnet-06e4e7b357640bb4f
-          - subnet-064034a8d30c41528
+          - subnet-0fdc7d89e2b460ee1
+          - subnet-0b0a0583d221d317b
         SecurityGroupIds:
-          - sg-0992135dd56d6615c
-      RoleArn: arn:aws:iam::650251721226:role/EKSRole
+          - sg-044b4b6bf5141af7f
+      RoleArn: arn:aws:iam::971422685560:role/aws-service-role/eks.amazonaws.com/AWSServiceRoleForAmazonEKS
 
   # Node Group
   EKSNodeGroup:
@@ -24,10 +24,10 @@ Resources:
       ScalingConfig:
         MinSize: 1
         MaxSize: 2
-        DesiredSize: 2
+        DesiredSize: 1
       Subnets:
-        - subnet-06e4e7b357640bb4f
-        - subnet-064034a8d30c41528
+        - subnet-0fdc7d89e2b460ee1
+        - subnet-0b0a0583d221d317b
       InstanceTypes:
         - t3.medium
       AmiType: AL2_x86_64
@@ -46,11 +46,11 @@ Resources:
                 - ec2.amazonaws.com
             Action:
               - sts:AssumeRole
-      Path: "/"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::971422685560:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::971422685560:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::971422685560:policy/AmazonEC2ContainerRegistryReadOnly
+      Path: "/"
 
   # IAM Instance Profile for Node Group
   EKSNodeInstanceProfile:
@@ -59,6 +59,32 @@ Resources:
       Path: "/"
       Roles:
         - !Ref EKSNodeRole
+
+  # IAM Role for EKS Cluster
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::971422685560:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::971422685560:policy/AmazonEKSVPCResourceController
+      Path: "/"
+
+  # IAM Instance Profile for EKS Cluster
+  EKSClusterInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EKSClusterRole
 
 Outputs:
   ClusterName:
