@@ -1,70 +1,82 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'EKS Cluster Setup for Laravel Application'
+Description: EKS Cluster with IAM roles and subnets.
 
 Parameters:
+  VPCId:
+    Description: VPC ID to deploy the EKS Cluster in
+    Type: AWS::EC2::VPC::Id
   SubnetIds:
-    Type: CommaDelimitedList
-    Description: Subnet IDs for EKS Cluster
+    Description: A list of Subnet IDs where EKS will deploy the nodes
+    Type: List<AWS::EC2::Subnet::Id>
+  NodeInstanceType:
+    Description: EC2 instance type for the EKS nodes
+    Type: String
+    Default: t3.medium
+  KubernetesVersion:
+    Description: Kubernetes version for the EKS Cluster
+    Type: String
+    Default: "1.21"
 
 Resources:
-  # EKS Cluster Role
+
+  # IAM Role for the EKS Cluster
   EKSClusterRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: Allow
+          - Effect: "Allow"
             Principal:
-              Service: eks.amazonaws.com
-            Action: sts:AssumeRole
+              Service: "eks.amazonaws.com"
+            Action: "sts:AssumeRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
 
-  # EKS Node Role
+  # IAM Role for the EKS Nodegroup
   EKSNodeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: Allow
+          - Effect: "Allow"
             Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
+              Service: "ec2.amazonaws.com"
+            Action: "sts:AssumeRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonVPCFullAccess
 
   # EKS Cluster
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Name: LaravelEKSCluster
+      Name: "LaravelEKS"
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
         SubnetIds: !Ref SubnetIds
-        SecurityGroupIds:
-          - sg-044b4b6bf5141af7f  # Update with your security group ID
-      Version: '1.22'  # Updated Kubernetes version
+        SecurityGroupIds: []
+      Version: !Ref KubernetesVersion
 
-  # VPC for EKS (You can use an existing VPC)
-  VPC:
-    Type: AWS::EC2::VPC
+  # EKS Node Group
+  EKSNodeGroup:
+    Type: AWS::EKS::Nodegroup
     Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
+      ClusterName: !Ref EKSCluster
+      NodeRole: !GetAtt EKSNodeRole.Arn
+      Subnets: !Ref SubnetIds
+      InstanceTypes:
+        - !Ref NodeInstanceType
+      DesiredSize: 1
+      MaxSize: 2
+      MinSize: 1
 
 Outputs:
-  ClusterName:
-    Description: 'EKS Cluster Name'
+  EKSClusterName:
+    Description: "EKS Cluster Name"
     Value: !Ref EKSCluster
-  ClusterEndpoint:
-    Description: 'EKS Cluster API Server Endpoint'
-    Value: !GetAtt EKSCluster.Endpoint
-  ClusterRoleArn:
-    Description: 'EKS Cluster Role ARN'
-    Value: !GetAtt EKSClusterRole.Arn
+  EKSNodeRoleArn:
+    Description: "EKS Node Role ARN"
+    Value: !GetAtt EKSNodeRole.Arn
