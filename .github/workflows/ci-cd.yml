@@ -67,7 +67,7 @@ jobs:
     - name: Build and Push Docker Image
       run: |
         IMAGE_TAG=latest
-        IMAGE_URI=650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:$IMAGE_TAG
+        IMAGE_URI=971422685560.dkr.ecr.us-east-1.amazonaws.com/laravel-app:$IMAGE_TAG
 
         echo "Building Docker image with tag: $IMAGE_URI"
         docker build -f docker/Dockerfile -t $IMAGE_URI .
@@ -78,13 +78,13 @@ jobs:
     # Step 5: Update Kubernetes Config for EKS
     - name: Update kubeconfig for EKS
       run: |
-        aws eks update-kubeconfig --region ap-south-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
+        aws eks update-kubeconfig --region us-east-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
 
     # Step 6: Replace Image URI in Kubernetes Manifest
     - name: Replace Docker Image in Kubernetes Manifest
       run: |
         IMAGE_TAG=latest
-        IMAGE_URI=650251721226.dkr.ecr.ap-south-1.amazonaws.com/laravel-app:$IMAGE_TAG
+        IMAGE_URI=971422685560.dkr.ecr.us-east-1.amazonaws.com/laravel-app:$IMAGE_TAG
 
         echo "Replacing DOCKER_IMAGE placeholder with $IMAGE_URI in Kubernetes manifest"
         sed -i.bak "s|DOCKER_IMAGE|$IMAGE_URI|g" docker/deployment.yaml
