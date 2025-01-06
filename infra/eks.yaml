@@ -1,20 +1,74 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EKS Cluster for Laravel Application
+Description: EKS Cluster with Managed Node Group for Laravel Application
 
 Resources:
+  # EKS Cluster
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
       Name: LaravelEKSCluster
       ResourcesVpcConfig:
         SubnetIds:
-          - subnet-0fdc7d89e2b460ee1
-          - subnet-0b0a0583d221d317b
+          - subnet-06e4e7b357640bb4f
+          - subnet-064034a8d30c41528
         SecurityGroupIds:
-          - sg-044b4b6bf5141af7f
+          - sg-0992135dd56d6615c
       RoleArn: arn:aws:iam::650251721226:role/EKSRole
+
+  # Node Group
+  EKSNodeGroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref EKSCluster
+      NodegroupName: LaravelNodeGroup
+      ScalingConfig:
+        MinSize: 1
+        MaxSize: 2
+        DesiredSize: 2
+      Subnets:
+        - subnet-06e4e7b357640bb4f
+        - subnet-064034a8d30c41528
+      InstanceTypes:
+        - t3.medium
+      AmiType: AL2_x86_64
+      NodeRole: !GetAtt EKSNodeRole.Arn
+
+  # IAM Role for Node Group
+  EKSNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+  # IAM Instance Profile for Node Group
+  EKSNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EKSNodeRole
 
 Outputs:
   ClusterName:
     Value: !Ref EKSCluster
-    Description: Name of the EKS Cluster
+    Description: The name of the EKS Cluster
+
+  NodeGroupName:
+    Value: !Ref EKSNodeGroup
+    Description: The name of the EKS Node Group
+
+  NodeInstanceRole:
+    Value: !Ref EKSNodeRole
+    Description: The IAM Role for the EKS Node Group
