@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EKS Cluster for Laravel Application
 
 Resources:
   # EKS Cluster Role
@@ -39,31 +38,48 @@ Resources:
     Type: AWS::EKS::Cluster
     Properties:
       Name: LaravelEKSCluster
+      RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
         SubnetIds:
-          - subnet-0ad7134cb6ddc4635  # Correct subnet ID 1
-          - subnet-06e4e7b357640bb4f  # Correct subnet ID 2
+          - subnet-0ad7134cb6ddc4635
+          - subnet-06e4e7b357640bb4f
         SecurityGroupIds:
           - sg-044b4b6bf5141af7f
-      RoleArn: arn:aws:iam::971422685560:role/EKSClusterRole
+      Version: '1.21'
 
   # EKS Node Group
   EKSNodeGroup:
     Type: AWS::EKS::Nodegroup
     Properties:
       ClusterName: !Ref EKSCluster
-      NodeRole: arn:aws:iam::971422685560:role/EKSNodeRole
+      NodegroupName: LaravelEKSNodeGroup
+      NodeRole: !GetAtt EKSNodeRole.Arn
       Subnets:
-        - subnet-0ad7134cb6ddc4635  # Correct subnet ID 1
-        - subnet-06e4e7b357640bb4f  # Correct subnet ID 2
+        - subnet-0ad7134cb6ddc4635
+        - subnet-06e4e7b357640bb4f
+      ScalingConfig:
+        MinSize: 1
+        MaxSize: 2
+        DesiredSize: 1
       InstanceTypes:
         - t3.medium
-      ScalingConfig:
-        MinSize: 1  # Minimum nodes
-        MaxSize: 2  # Maximum nodes
-        DesiredSize: 1  # Desired number of nodes
+      AmiType: AL2_x86_64
+      RemoteAccess:
+        Ec2SshKey: testing
 
 Outputs:
-  ClusterName:
+  EKSClusterName:
+    Description: "EKS Cluster Name"
     Value: !Ref EKSCluster
-    Description: Name of the EKS Cluster
+
+  EKSClusterRoleArn:
+    Description: "EKS Cluster Role ARN"
+    Value: !GetAtt EKSClusterRole.Arn
+
+  EKSNodeRoleArn:
+    Description: "EKS Node Role ARN"
+    Value: !GetAtt EKSNodeRole.Arn
+
+  EKSNodeGroupName:
+    Description: "EKS Node Group Name"
+    Value: !Ref EKSNodeGroup
