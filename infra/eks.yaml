@@ -1,13 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EKS Cluster with IAM roles and subnets.
+Description: EKS Cluster with VPC, Subnets, IAM roles, and NodeGroup.
 
 Parameters:
-  VPCId:
-    Description: VPC ID to deploy the EKS Cluster in
-    Type: AWS::EC2::VPC::Id
-  SubnetIds:
-    Description: A list of Subnet IDs where EKS will deploy the nodes
-    Type: List<AWS::EC2::Subnet::Id>
   NodeInstanceType:
     Description: EC2 instance type for the EKS nodes
     Type: String
@@ -18,6 +12,82 @@ Parameters:
     Default: "1.21"
 
 Resources:
+
+  # VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: LaravelEKS-VPC
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: LaravelEKS-IGW
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # Public Subnets
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: LaravelEKS-PublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: LaravelEKS-PublicSubnet2
+
+  # Route Table for Public Subnets
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: LaravelEKS-PublicRouteTable
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
 
   # IAM Role for the EKS Cluster
   EKSClusterRole:
@@ -56,7 +126,9 @@ Resources:
       Name: "LaravelEKS"
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
-        SubnetIds: !Ref SubnetIds
+        SubnetIds:
+          - !Ref PublicSubnet1
+          - !Ref PublicSubnet2
         SecurityGroupIds: []
       Version: !Ref KubernetesVersion
 
@@ -66,7 +138,9 @@ Resources:
     Properties:
       ClusterName: !Ref EKSCluster
       NodeRole: !GetAtt EKSNodeRole.Arn
-      Subnets: !Ref SubnetIds
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
       InstanceTypes:
         - !Ref NodeInstanceType
       DesiredSize: 1
@@ -74,6 +148,15 @@ Resources:
       MinSize: 1
 
 Outputs:
+  VPCId:
+    Description: "VPC ID"
+    Value: !Ref VPC
+  PublicSubnet1Id:
+    Description: "Public Subnet 1 ID"
+    Value: !Ref PublicSubnet1
+  PublicSubnet2Id:
+    Description: "Public Subnet 2 ID"
+    Value: !Ref PublicSubnet2
   EKSClusterName:
     Description: "EKS Cluster Name"
     Value: !Ref EKSCluster
